@@ -66,26 +66,6 @@ export default function Home() {
 
   return (
     <div className="container">
-      <div className="headerBar">
-        <div className="brand">
-          <div className="brandTitle">다이어리</div>
-          {tab === "quote" ? (
-            <>
-              <div className="brandSub">
-                마음에 오래 남은 문장들을 모았습니다.
-              </div>
-              <div className="brandSub">
-                이 글들이 누군가의 하루에 닿기를 바랍니다.
-              </div>
-            </>
-          ) : (
-            <>
-              <div className="brandSub">제 생각을 정리해두는 공간입니다.</div>
-            </>
-          )}
-        </div>
-      </div>
-
       <div
         className="row"
         style={{ justifyContent: "space-between", marginBottom: 12 }}

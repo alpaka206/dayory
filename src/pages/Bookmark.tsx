@@ -29,14 +29,6 @@ export default function Favorites() {
 
   return (
     <div className="container">
-      <div className="headerBar">
-        <div className="brand">
-          <div className="brandTitle">Bookmark</div>
-          <div className="brandSub">저장한 글 모아보기</div>
-        </div>
-        <div className="small">{favMeta.length}개</div>
-      </div>
-
       <section className="card">
         {loading && favMeta.length === 0 ? (
           <div className="small">불러오는 중…</div>
@@ -68,6 +60,7 @@ export default function Favorites() {
                     style={{
                       marginTop: 10,
                       whiteSpace: "pre-line",
+                      fontSize: "14px",
                       fontWeight: 650,
                       lineHeight: 1.7,
                     }}

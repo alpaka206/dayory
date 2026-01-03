@@ -167,7 +167,7 @@ body {
 }
 
 .quoteText {
-  font-size: 22px;
+  font-size: 14px;
   font-weight: 720;
   letter-spacing: -0.35px;
   line-height: 1.65;
@@ -202,4 +202,112 @@ body {
 }
 .contentMotion.toPrev {
   animation: fadeSlidePrev 220ms ease;
+}
+
+/* mini player */
+.playerMini {
+  display: grid;
+  gap: 10px;
+
+  padding: 10px 14px;
+  border-radius: 18px;
+
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.18);
+}
+
+.playerMiniInfo {
+  min-width: 0;
+  display: grid;
+  gap: 4px;
+}
+
+.playerMiniTitle {
+  font-weight: 850;
+  letter-spacing: -0.2px;
+  font-size: 15px;
+  line-height: 1.25;
+
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.playerMiniArtist {
+  font-size: 12px;
+  opacity: 0.72;
+  letter-spacing: -0.1px;
+
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.playerMiniControls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+/* chip을 아이콘 버튼처럼 */
+.chip.icon {
+  font-size: 18px;
+  width: 38px;
+  height: 26px;
+  padding: 0;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  line-height: 1;
+}
+
+/* 가운데 재생 버튼은 살짝 더 강조 */
+.chip.icon.play {
+  font-size: 12px;
+  width: 44px;
+  height: 26px;
+}
+
+.headerCompact {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding-top: 14px;
+  padding-bottom: 10px;
+}
+
+.headerLeft {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.headerTitle {
+  font-weight: 900;
+  letter-spacing: -0.3px;
+  font-size: 16px;
+  line-height: 1.1;
+}
+
+.headerSub {
+  margin-top: 2px;
+  font-size: 12px;
+  opacity: 0.72;
+  letter-spacing: -0.1px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.headerNav {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
