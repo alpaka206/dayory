@@ -1,19 +1,26 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Tabs from "../components/Tabs";
 import { useEntries } from "../hooks/useEntries";
 import { useLikes } from "../hooks/useLikes";
 import { usePager } from "../hooks/usePager";
+import type { EntryMeta } from "../lib/types";
+
+function getWarmupIds(list: EntryMeta[], idx: number): string[] {
+  if (list.length === 0) return [];
+
+  const targetIndexes = [idx];
+  if (list.length > 1) targetIndexes.push((idx + 1) % list.length);
+  if (list.length > 2) {
+    targetIndexes.push((idx - 1 + list.length) % list.length);
+  }
+
+  return [...new Set(targetIndexes.map((targetIdx) => list[targetIdx]?.id))]
+    .filter((id): id is string => Boolean(id));
+}
 
 export default function Home() {
-  const {
-    loading,
-    error,
-    quotesMeta,
-    journalsMeta,
-    loadedCount,
-    ensureLoaded,
-    getText,
-  } = useEntries();
+  const { loading, error, quotesMeta, journalsMeta, ensureContentByIds, getText } =
+    useEntries();
 
   const { isLiked, toggleLike } = useLikes();
 
@@ -22,15 +29,11 @@ export default function Home() {
 
   const quotePager = usePager({
     total: quotesMeta.length,
-    loaded: loadedCount.quote,
-    ensureLoaded: (want) => void ensureLoaded("quote", want),
     persistKey: "teum_quote_idx_v1",
   });
 
   const journalPager = usePager({
     total: journalsMeta.length,
-    loaded: loadedCount.journal,
-    ensureLoaded: (want) => void ensureLoaded("journal", want),
   });
 
   const quoteMeta = useMemo(() => {
@@ -48,8 +51,22 @@ export default function Home() {
       ? quotesMeta[quotePager.idx]
       : journalsMeta[journalPager.idx];
 
-  const currentText = currentMeta ? getText(currentMeta.id) : undefined;
+  useEffect(() => {
+    const activeList = tab === "quote" ? quotesMeta : journalsMeta;
+    const activeIdx = tab === "quote" ? quotePager.idx : journalPager.idx;
+    const ids = getWarmupIds(activeList, activeIdx);
+    if (ids.length === 0) return;
+    void ensureContentByIds(ids);
+  }, [
+    tab,
+    quotePager.idx,
+    journalPager.idx,
+    quotesMeta,
+    journalsMeta,
+    ensureContentByIds,
+  ]);
 
+  const currentText = currentMeta ? getText(currentMeta.id) : undefined;
   const headerRight = tab === "quote" ? quoteMeta : journalMeta;
 
   const onPrev = () => {

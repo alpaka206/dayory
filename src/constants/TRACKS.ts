@@ -54,4 +54,29 @@ export const TRACKS = [
     artist: "한로로",
     url: "https://www.youtube.com/watch?v=cp0eesd7h_w",
   },
+  {
+    title: "bad",
+    artist: "wave to earth",
+    url: "https://www.youtube.com/watch?v=6Q5xqNkCk7w",
+  },
+  {
+    title: "love.",
+    artist: "wave to earth",
+    url: "https://www.youtube.com/watch?v=Q49pnA4jsp8",
+  },
+  {
+    title: "주저하는 연인들을 위해",
+    artist: "잔나비",
+    url: "https://www.youtube.com/watch?v=GdoNGNe5CSg",
+  },
+  {
+    title: "joke!",
+    artist: "새소년",
+    url: "https://www.youtube.com/watch?v=TxzA-gnk_FY",
+  },
+  {
+    title: "Youth (DAY)",
+    artist: "우효",
+    url: "https://www.youtube.com/watch?v=2El3ZfWbehw",
+  },
 ];

@@ -8,9 +8,14 @@ import {
 type UseYouTubePlayerArgs = {
   videoId: string;
   onEnded?: () => void;
+  onError?: () => void;
 };
 
-export function useYouTubePlayer({ videoId, onEnded }: UseYouTubePlayerArgs) {
+export function useYouTubePlayer({
+  videoId,
+  onEnded,
+  onError,
+}: UseYouTubePlayerArgs) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const playerRef = useRef<YTPlayer | null>(null);
 
@@ -64,6 +69,7 @@ export function useYouTubePlayer({ videoId, onEnded }: UseYouTubePlayerArgs) {
             onError: (e) => {
               if (!alive) return;
               setError(`YT error: ${String(e.data)}`);
+              onError?.();
             },
           },
         });
@@ -95,6 +101,8 @@ export function useYouTubePlayer({ videoId, onEnded }: UseYouTubePlayerArgs) {
     const p = playerRef.current;
     if (!p) return;
 
+    setError(null);
+    setState(-1);
     p.loadVideoById(videoId);
   }, [videoId, ready]);
 

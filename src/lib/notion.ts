@@ -16,13 +16,15 @@ type RawRow = {
 };
 
 export async function fetchEntryMetaList(): Promise<EntryMeta[]> {
-  if (!DB_PAGE_ID) throw new Error("VITE_NOTION_PAGE_ID가 비어있어.");
+  if (!DB_PAGE_ID) throw new Error("VITE_NOTION_PAGE_ID가 비어 있습니다.");
 
-  const res = await fetch(`/api/notion/table/${DB_PAGE_ID}?t=${Date.now()}`);
+  const res = await fetch(`/api/notion/table/${DB_PAGE_ID}`);
   if (!res.ok) throw new Error(`Notion table fetch failed: ${res.status}`);
 
   const json: unknown = await res.json();
-  if (!Array.isArray(json)) throw new Error("Notion table 응답 형식이 이상해.");
+  if (!Array.isArray(json)) {
+    throw new Error("Notion table 응답 형식이 이상합니다.");
+  }
 
   return (json as RawRow[])
     .map((r) => ({
@@ -36,7 +38,7 @@ export async function fetchEntryMetaList(): Promise<EntryMeta[]> {
 }
 
 export async function fetchPageContent(pageId: string): Promise<string> {
-  const res = await fetch(`/api/notion/page/${pageId}?t=${Date.now()}`);
+  const res = await fetch(`/api/notion/page/${pageId}`);
   if (!res.ok) throw new Error(`Notion page fetch failed: ${res.status}`);
 
   const json = (await res.json()) as { text?: string; error?: string };

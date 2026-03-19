@@ -2,8 +2,6 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 
 type Args = {
   total: number;
-  loaded: number;
-  ensureLoaded: (want: number) => void;
   persistKey?: string;
 };
 
@@ -21,11 +19,11 @@ function saveIdx(key: string, n: number) {
   try {
     localStorage.setItem(key, String(n));
   } catch {
-    // error
+    // ignore persistence failures
   }
 }
 
-export function usePager({ total, loaded, ensureLoaded, persistKey }: Args) {
+export function usePager({ total, persistKey }: Args) {
   const [idx, setIdx] = useState<number>(() =>
     persistKey ? loadIdx(persistKey) : 0
   );
@@ -40,19 +38,6 @@ export function usePager({ total, loaded, ensureLoaded, persistKey }: Args) {
     saveIdx(persistKey, safeIdx);
   }, [persistKey, safeIdx]);
 
-  useEffect(() => {
-    if (total === 0) return;
-
-    const needMore = loaded - (safeIdx + 1) <= 1;
-    const hasMore = loaded < total;
-
-    if (needMore && hasMore) {
-      ensureLoaded(Math.min(loaded + 5, total));
-    }
-  }, [safeIdx, loaded, total, ensureLoaded]);
-
-  const canShow = safeIdx < loaded;
-
   const next = useCallback(() => {
     if (total === 0) return;
     setIdx((p) => p + 1);
@@ -63,5 +48,5 @@ export function usePager({ total, loaded, ensureLoaded, persistKey }: Args) {
     setIdx((p) => p - 1);
   }, [total]);
 
-  return { idx: safeIdx, canShow, next, prev };
+  return { idx: safeIdx, next, prev };
 }

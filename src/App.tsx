@@ -7,9 +7,10 @@ import {
   useLocation,
 } from "react-router-dom";
 import Home from "./pages/Home";
-import Favorites from "./pages/Bookmark";
+import BookmarkPage from "./pages/Bookmark";
+import { EntriesProvider } from "./hooks/useEntries";
 import "./styles/global.css";
-import YoutubePlaylistPlayer from "./components/YoutubePlaylistPlayer";
+import YouTubePlaylistPlayer from "./components/YoutubePlaylistPlayer";
 import { TRACKS } from "./constants/TRACKS";
 
 function AppHeader() {
@@ -19,9 +20,9 @@ function AppHeader() {
   return (
     <header className="container headerCompact">
       <div className="headerLeft">
-        <div className="headerTitle">{isFav ? "Bookmark" : "다이어리"}</div>
+        <div className="headerTitle">{isFav ? "저장함" : "다이어리"}</div>
         <div className="headerSub">
-          {isFav ? "저장한 글 모아보기" : "좋은 글귀 및 생각 정리"}
+          {isFav ? "저장한 문장과 기록 모아보기" : "문장과 기록을 천천히 읽기"}
         </div>
       </div>
 
@@ -30,13 +31,13 @@ function AppHeader() {
           to="/"
           className={({ isActive }) => `chip ${isActive ? "on" : ""}`}
         >
-          Home
+          둘러보기
         </NavLink>
         <NavLink
           to="/favorite"
           className={({ isActive }) => `chip ${isActive ? "on" : ""}`}
         >
-          Bookmark
+          저장함
         </NavLink>
       </nav>
     </header>
@@ -46,19 +47,21 @@ function AppHeader() {
 export default function App() {
   return (
     <BrowserRouter>
-      <div className="glow" />
+      <EntriesProvider>
+        <div className="glow" />
 
-      <AppHeader />
+        <AppHeader />
 
-      <div className="container" style={{ paddingBottom: 14 }}>
-        <YoutubePlaylistPlayer tracks={TRACKS} />
-      </div>
+        <div className="container" style={{ paddingBottom: 14 }}>
+          <YouTubePlaylistPlayer tracks={TRACKS} />
+        </div>
 
-      <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/favorite" element={<Favorites />} />
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/favorite" element={<BookmarkPage />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </EntriesProvider>
     </BrowserRouter>
   );
 }

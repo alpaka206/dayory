@@ -246,6 +246,12 @@ body {
   text-overflow: ellipsis;
 }
 
+.playerMiniMeta {
+  font-size: 11px;
+  color: var(--muted2);
+  letter-spacing: -0.1px;
+}
+
 .playerMiniControls {
   display: flex;
   align-items: center;

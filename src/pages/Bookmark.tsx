@@ -1,8 +1,11 @@
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useEntries } from "../hooks/useEntries";
 import { useLikes } from "../hooks/useLikes";
 
-export default function Favorites() {
+const INITIAL_VISIBLE_COUNT = 12;
+const LOAD_MORE_COUNT = 12;
+
+export default function BookmarkPage() {
   const {
     quotesMeta,
     journalsMeta,
@@ -17,19 +20,43 @@ export default function Favorites() {
     () => [...quotesMeta, ...journalsMeta],
     [quotesMeta, journalsMeta]
   );
-  const favMeta = useMemo(
-    () => allMeta.filter((m) => likedIds.has(m.id)),
-    [allMeta, likedIds]
+  const favMeta = useMemo(() => {
+    return allMeta
+      .filter((m) => likedIds.has(m.id))
+      .slice()
+      .sort((a, b) => {
+        const byDate = (b.date ?? "").localeCompare(a.date ?? "");
+        if (byDate !== 0) return byDate;
+        return a.pageTitle.localeCompare(b.pageTitle, "ko");
+      });
+  }, [allMeta, likedIds]);
+
+  const [visibleCount, setVisibleCount] = useState(INITIAL_VISIBLE_COUNT);
+  const visibleMeta = useMemo(
+    () => favMeta.slice(0, visibleCount),
+    [favMeta, visibleCount]
   );
 
   useEffect(() => {
-    if (favMeta.length === 0) return;
-    void ensureContentByIds(favMeta.map((f) => f.id));
-  }, [favMeta, ensureContentByIds]);
+    if (visibleMeta.length === 0) return;
+    void ensureContentByIds(visibleMeta.map((f) => f.id));
+  }, [visibleMeta, ensureContentByIds]);
 
   return (
     <div className="container">
       <section className="card">
+        {favMeta.length > 0 ? (
+          <div
+            className="row"
+            style={{ justifyContent: "space-between", marginBottom: 12 }}
+          >
+            <div className="small">저장한 글 {favMeta.length}개</div>
+            <div className="small">
+              {Math.min(visibleMeta.length, favMeta.length)} / {favMeta.length}
+            </div>
+          </div>
+        ) : null}
+
         {loading && favMeta.length === 0 ? (
           <div className="small">불러오는 중…</div>
         ) : null}
@@ -41,7 +68,7 @@ export default function Favorites() {
           <div className="small">아직 저장한 글이 없습니다.</div>
         ) : (
           <div style={{ display: "grid", gap: 12 }}>
-            {favMeta.map((f) => {
+            {visibleMeta.map((f) => {
               const text = getText(f.id);
 
               return (
@@ -82,6 +109,19 @@ export default function Favorites() {
                 </div>
               );
             })}
+
+            {visibleCount < favMeta.length ? (
+              <button
+                className="btn"
+                onClick={() =>
+                  setVisibleCount((prev) =>
+                    Math.min(prev + LOAD_MORE_COUNT, favMeta.length)
+                  )
+                }
+              >
+                글 더 보기
+              </button>
+            ) : null}
           </div>
         )}
       </section>
