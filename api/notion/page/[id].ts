@@ -1,7 +1,7 @@
 import {
   applyNotionCacheHeaders,
   getNotionPageText,
-} from "../../../server/notion-service";
+} from "../../../server/notion-service.js";
 
 type ApiRequest = {
   method?: string;
