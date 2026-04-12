@@ -16,8 +16,8 @@ function sendJson(res: ServerResponse, data: unknown, status = 200) {
 
 export function notionApiMiddleware(): Handler[] {
   const tableHandler: Handler = async (req, res, next) => {
-    const url = req.url ?? "";
-    const match = url.match(/^\/api\/notion\/table\/([a-f0-9-]+)/);
+    const parsedUrl = new URL(req.url ?? "", "http://localhost");
+    const match = parsedUrl.pathname.match(/^\/api\/notion\/table\/([a-f0-9-]+)/);
     if (!match) return next();
 
     const pageId = match[1];
@@ -33,15 +33,21 @@ export function notionApiMiddleware(): Handler[] {
   };
 
   const pageHandler: Handler = async (req, res, next) => {
-    const url = req.url ?? "";
-    const match = url.match(/^\/api\/notion\/page\/([a-f0-9-]+)/);
+    const parsedUrl = new URL(req.url ?? "", "http://localhost");
+    const match = parsedUrl.pathname.match(/^\/api\/notion\/page\/([a-f0-9-]+)/);
     if (!match) return next();
 
     const pageId = match[1];
+    const rootPageId = parsedUrl.searchParams.get("rootId") ?? "";
+
+    if (!rootPageId) {
+      sendJson(res, { error: "Missing root page id" }, 400);
+      return;
+    }
 
     try {
       applyNotionCacheHeaders(res, "page");
-      const text = await getNotionPageText(pageId);
+      const text = await getNotionPageText(rootPageId, pageId);
       sendJson(res, { text });
     } catch (e) {
       const msg = e instanceof Error ? e.message : "Unknown error";

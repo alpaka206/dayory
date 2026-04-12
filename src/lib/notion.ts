@@ -38,7 +38,12 @@ export async function fetchEntryMetaList(): Promise<EntryMeta[]> {
 }
 
 export async function fetchPageContent(pageId: string): Promise<string> {
-  const res = await fetch(`/api/notion/page/${pageId}`);
+  if (!DB_PAGE_ID) throw new Error("VITE_NOTION_PAGE_ID가 비어 있습니다.");
+
+  const params = new URLSearchParams({
+    rootId: DB_PAGE_ID,
+  });
+  const res = await fetch(`/api/notion/page/${pageId}?${params.toString()}`);
   if (!res.ok) throw new Error(`Notion page fetch failed: ${res.status}`);
 
   const json = (await res.json()) as { text?: string; error?: string };

@@ -5,7 +5,7 @@ import {
 
 type ApiRequest = {
   method?: string;
-  query?: { id?: string | string[] };
+  query?: { id?: string | string[]; rootId?: string | string[] };
 };
 
 type ApiResponse = {
@@ -24,11 +24,13 @@ export default async function handler(req: ApiRequest, res: ApiResponse) {
   }
 
   const pageId = String(req.query?.id ?? "");
+  const rootPageId = String(req.query?.rootId ?? "");
   if (!pageId) return sendJson(res, { error: "Missing page id" }, 400);
+  if (!rootPageId) return sendJson(res, { error: "Missing root page id" }, 400);
 
   try {
     applyNotionCacheHeaders(res, "page");
-    const text = await getNotionPageText(pageId);
+    const text = await getNotionPageText(rootPageId, pageId);
     return sendJson(res, { text });
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Unknown error";
