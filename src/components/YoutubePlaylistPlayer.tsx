@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { extractVideoId } from "../lib/youtube";
 import { useYouTubePlayer } from "../hooks/useYouTubePlayer";
+import { extractVideoId } from "../lib/youtube";
 
 type Track = { title: string; artist?: string; url: string };
 
@@ -33,10 +33,10 @@ export default function YouTubePlaylistPlayer({ tracks }: Props) {
     const seen = new Set<string>();
 
     return tracks
-      .map((t) => ({ ...t, id: extractVideoId(t.url) }))
-      .filter((t): t is Track & { id: string } => {
-        if (!t.id || seen.has(t.id)) return false;
-        seen.add(t.id);
+      .map((track) => ({ ...track, id: extractVideoId(track.url) }))
+      .filter((track): track is Track & { id: string } => {
+        if (!track.id || seen.has(track.id)) return false;
+        seen.add(track.id);
         return true;
       });
   }, [tracks]);
@@ -55,12 +55,12 @@ export default function YouTubePlaylistPlayer({ tracks }: Props) {
 
   const next = useCallback(() => {
     if (total === 0) return;
-    setIdx((p) => (p + 1) % total);
+    setIdx((prev) => (prev + 1) % total);
   }, [total]);
 
   const prev = useCallback(() => {
     if (total === 0) return;
-    setIdx((p) => (p - 1 + total) % total);
+    setIdx((prev) => (prev - 1 + total) % total);
   }, [total]);
 
   const { containerRef, ready, state, error, play, pause } = useYouTubePlayer({
@@ -71,10 +71,10 @@ export default function YouTubePlaylistPlayer({ tracks }: Props) {
 
   const playing = state === 1;
   const helperText = error
-    ? "재생 오류가 있어 다음 곡으로 넘깁니다."
+    ? "재생 오류가 있어 다음 곡으로 넘어갑니다."
     : ready
       ? `${safeIdx + 1} / ${total}`
-      : "플레이어 준비 중";
+      : "플레이어를 준비하고 있습니다.";
 
   if (total === 0) return null;
 
@@ -86,18 +86,28 @@ export default function YouTubePlaylistPlayer({ tracks }: Props) {
       />
 
       <div className="playerMiniInfo">
+        <div className="playerMiniTop">
+          <span className="eyebrow subtle">함께 듣는 음악</span>
+          <div className="playerMiniMeta">{helperText}</div>
+        </div>
+
         <div className="playerMiniTitle">{current.title}</div>
         <div className="playerMiniArtist">{current.artist ?? " "}</div>
-        <div className="playerMiniMeta">{helperText}</div>
       </div>
 
       <div className="playerMiniControls">
-        <button className="chip icon" onClick={prev} aria-label="이전">
+        <button
+          type="button"
+          className="chip icon"
+          onClick={prev}
+          aria-label="이전"
+        >
           ‹
         </button>
 
         {playing ? (
           <button
+            type="button"
             className="chip on icon play"
             onClick={pause}
             aria-label="일시정지"
@@ -106,16 +116,21 @@ export default function YouTubePlaylistPlayer({ tracks }: Props) {
           </button>
         ) : (
           <button
+            type="button"
             className="chip on icon play"
             onClick={play}
             aria-label="재생"
-            disabled={!ready && !error ? false : false}
           >
-            ▶
+            ►
           </button>
         )}
 
-        <button className="chip icon" onClick={next} aria-label="다음">
+        <button
+          type="button"
+          className="chip icon"
+          onClick={next}
+          aria-label="다음"
+        >
           ›
         </button>
       </div>

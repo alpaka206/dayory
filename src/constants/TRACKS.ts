@@ -10,7 +10,7 @@ export const TRACKS = [
     url: "https://www.youtube.com/watch?v=gjQwwWjxPaQ",
   },
   {
-    title: "Anfifreeze",
+    title: "Antifreeze",
     artist: "검정치마",
     url: "https://www.youtube.com/watch?v=PGADim6UzHE",
   },
@@ -45,6 +45,11 @@ export const TRACKS = [
     url: "https://www.youtube.com/watch?v=xvmwqB4fjQ4",
   },
   {
+    title: "유자차",
+    artist: "브로콜리너마저",
+    url: "https://www.youtube.com/watch?v=_Wn31YK0VSM",
+  },
+  {
     title: "0+0",
     artist: "한로로",
     url: "https://www.youtube.com/watch?v=_Ngk-DCHfD0",
@@ -53,6 +58,31 @@ export const TRACKS = [
     title: "Welcome!",
     artist: "한로로",
     url: "https://www.youtube.com/watch?v=cp0eesd7h_w",
+  },
+  {
+    title: "비틀비틀 짝짜꿍",
+    artist: "한로로",
+    url: "https://www.youtube.com/watch?v=eERmo7trq4k",
+  },
+  {
+    title: "나무",
+    artist: "카더가든",
+    url: "https://www.youtube.com/watch?v=GV2UMLT0DzQ",
+  },
+  {
+    title: "Home Sweet Home",
+    artist: "카더가든",
+    url: "https://www.youtube.com/watch?v=eGT-zt0nFQ4",
+  },
+  {
+    title: "31",
+    artist: "카더가든",
+    url: "https://www.youtube.com/watch?v=l4rOPJgborg",
+  },
+  {
+    title: "졸업",
+    artist: "브로콜리너마저",
+    url: "https://www.youtube.com/watch?v=0jVziDGnNrA",
   },
   {
     title: "bad",
@@ -73,6 +103,11 @@ export const TRACKS = [
     title: "joke!",
     artist: "새소년",
     url: "https://www.youtube.com/watch?v=TxzA-gnk_FY",
+  },
+  {
+    title: "나랑 아니면",
+    artist: "검정치마",
+    url: "https://www.youtube.com/watch?v=0dRo5Kbgx6c",
   },
   {
     title: "Youth (DAY)",
