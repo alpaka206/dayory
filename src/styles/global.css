@@ -273,8 +273,7 @@ button:focus-visible {
   transition:
     border-color var(--transition),
     background var(--transition),
-    color var(--transition),
-    transform var(--transition);
+    color var(--transition);
 }
 
 .chip {
@@ -290,7 +289,7 @@ button:focus-visible {
 
 .chip:active,
 .btn:active {
-  transform: translateY(1px);
+  transform: none;
 }
 
 .chip.on,
@@ -829,38 +828,6 @@ button:focus-visible {
   display: flex;
   justify-content: center;
   padding-top: 8px;
-}
-
-@keyframes pageInNext {
-  from {
-    opacity: 0.2;
-    transform: translateX(18px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
-}
-
-@keyframes pageInPrev {
-  from {
-    opacity: 0.2;
-    transform: translateX(-18px);
-  }
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
-}
-
-.contentMotion.toNext .bookPageText,
-.contentMotion.toNext .bookPageInfo {
-  animation: pageInNext 260ms ease;
-}
-
-.contentMotion.toPrev .bookPageText,
-.contentMotion.toPrev .bookPageInfo {
-  animation: pageInPrev 260ms ease;
 }
 
 @media (max-width: 920px) {

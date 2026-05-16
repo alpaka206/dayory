@@ -4,7 +4,6 @@ import {
   useLayoutEffect,
   useMemo,
   useRef,
-  useState,
   type PointerEvent,
 } from "react";
 import { useEntries } from "../hooks/useEntries";
@@ -40,7 +39,6 @@ export default function Home() {
     useEntries();
   const { isLiked, toggleLike } = useLikes();
 
-  const [motionDir, setMotionDir] = useState<"next" | "prev">("next");
   const quoteBoxRef = useRef<HTMLDivElement | null>(null);
   const quoteTextRef = useRef<HTMLQuoteElement | null>(null);
   const pointerStartX = useRef<number | null>(null);
@@ -64,12 +62,10 @@ export default function Home() {
     : "";
 
   const onPrev = useCallback(() => {
-    setMotionDir("prev");
     prev();
   }, [prev]);
 
   const onNext = useCallback(() => {
-    setMotionDir("next");
     next();
   }, [next]);
 
@@ -180,12 +176,7 @@ export default function Home() {
           ) : null}
 
           {currentMeta && currentText !== undefined ? (
-            <article
-              key={currentMeta.id}
-              className={`bookSpread contentMotion ${
-                motionDir === "next" ? "toNext" : "toPrev"
-              }`}
-            >
+            <article className="bookSpread">
               <div className="bookPage bookPageText" ref={quoteBoxRef}>
                 <button
                   type="button"
