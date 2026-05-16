@@ -1,9 +1,18 @@
-import { useEffect, useMemo, useState } from "react";
-import Tabs from "../components/Tabs";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type PointerEvent,
+} from "react";
 import { useEntries } from "../hooks/useEntries";
 import { useLikes } from "../hooks/useLikes";
 import { usePager } from "../hooks/usePager";
 import type { EntryMeta } from "../lib/types";
+
+const SWIPE_THRESHOLD = 42;
 
 function getWarmupIds(list: EntryMeta[], idx: number): string[] {
   if (list.length === 0) return [];
@@ -18,166 +27,251 @@ function getWarmupIds(list: EntryMeta[], idx: number): string[] {
     .filter((id): id is string => Boolean(id));
 }
 
-export default function Home() {
-  const { loading, error, quotesMeta, journalsMeta, ensureContentByIds, getText } =
-    useEntries();
+function getAuthorLabel(author: string, title: string): string {
+  const value = author.trim();
+  const pageTitle = title.trim();
+  if (!value || !pageTitle || !value.includes(pageTitle)) return value;
 
+  return value.replace(pageTitle, "").replace(/[,，]\s*$/, "").trim();
+}
+
+export default function Home() {
+  const { loading, error, entriesMeta, ensureContentByIds, getText } =
+    useEntries();
   const { isLiked, toggleLike } = useLikes();
 
-  const [tab, setTab] = useState<"quote" | "journal">("quote");
   const [motionDir, setMotionDir] = useState<"next" | "prev">("next");
+  const quoteBoxRef = useRef<HTMLDivElement | null>(null);
+  const quoteTextRef = useRef<HTMLQuoteElement | null>(null);
+  const pointerStartX = useRef<number | null>(null);
 
-  const quotePager = usePager({
-    total: quotesMeta.length,
-    persistKey: "teum_quote_idx_v1",
+  const pager = usePager({
+    total: entriesMeta.length,
+    persistKey: "teum_quote_idx_v2",
   });
+  const { idx, next, prev } = pager;
 
-  const journalPager = usePager({
-    total: journalsMeta.length,
-  });
+  const pageMeta = useMemo(() => {
+    if (entriesMeta.length === 0) return "";
+    return `${idx + 1}/${entriesMeta.length}`;
+  }, [idx, entriesMeta.length]);
 
-  const quoteMeta = useMemo(() => {
-    if (quotesMeta.length === 0) return "";
-    return `${quotePager.idx + 1}/${quotesMeta.length}`;
-  }, [quotePager.idx, quotesMeta.length]);
+  const currentMeta = entriesMeta[idx];
+  const currentText = currentMeta ? getText(currentMeta.id) : undefined;
+  const isCurrentLiked = currentMeta ? isLiked(currentMeta.id) : false;
+  const authorLabel = currentMeta
+    ? getAuthorLabel(currentMeta.author, currentMeta.pageTitle)
+    : "";
 
-  const journalMeta = useMemo(() => {
-    if (journalsMeta.length === 0) return "";
-    return `${journalPager.idx + 1}/${journalsMeta.length}`;
-  }, [journalPager.idx, journalsMeta.length]);
+  const onPrev = useCallback(() => {
+    setMotionDir("prev");
+    prev();
+  }, [prev]);
 
-  const activeList = tab === "quote" ? quotesMeta : journalsMeta;
-  const activeIdx = tab === "quote" ? quotePager.idx : journalPager.idx;
-  const currentMeta = activeList[activeIdx];
+  const onNext = useCallback(() => {
+    setMotionDir("next");
+    next();
+  }, [next]);
 
   useEffect(() => {
-    const ids = getWarmupIds(activeList, activeIdx);
+    const ids = getWarmupIds(entriesMeta, idx);
     if (ids.length === 0) return;
     void ensureContentByIds(ids);
-  }, [activeIdx, activeList, ensureContentByIds]);
+  }, [entriesMeta, ensureContentByIds, idx]);
 
-  const currentText = currentMeta ? getText(currentMeta.id) : undefined;
-  const headerRight = tab === "quote" ? quoteMeta : journalMeta;
-  const isCurrentLiked = currentMeta ? isLiked(currentMeta.id) : false;
-  const modeLabel = tab === "quote" ? "오늘의 문장" : "오늘의 기록";
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "ArrowLeft") onPrev();
+      if (event.key === "ArrowRight") onNext();
+    };
 
-  const onPrev = () => {
-    setMotionDir("prev");
-    if (tab === "quote") quotePager.prev();
-    else journalPager.prev();
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [onNext, onPrev]);
+
+  const fitQuoteText = useCallback(() => {
+    const box = quoteBoxRef.current;
+    const quote = quoteTextRef.current;
+    if (!box || !quote) return;
+
+    const header = box.querySelector<HTMLElement>(".quoteHeader");
+    const width = box.clientWidth;
+    const availableHeight =
+      box.clientHeight - (header?.offsetHeight ?? 0) - 28;
+
+    const baseSize = width < 520 ? 19 : width < 820 ? 23 : 28;
+    const minSize = width < 520 ? 12 : width < 820 ? 15 : 17;
+    const lineHeight = width < 520 ? 1.62 : 1.72;
+
+    let size = baseSize;
+    quote.style.setProperty("--quote-font-size", `${size}px`);
+    quote.style.setProperty("--quote-line-height", String(lineHeight));
+
+    while (size > minSize && quote.scrollHeight > availableHeight) {
+      size -= 1;
+      quote.style.setProperty("--quote-font-size", `${size}px`);
+    }
+  }, []);
+
+  useLayoutEffect(() => {
+    fitQuoteText();
+
+    const onResize = () => fitQuoteText();
+    window.addEventListener("resize", onResize);
+    void document.fonts?.ready?.then(fitQuoteText);
+
+    return () => window.removeEventListener("resize", onResize);
+  }, [currentText, fitQuoteText]);
+
+  const onPointerDown = (event: PointerEvent<HTMLElement>) => {
+    if (event.pointerType === "mouse" && event.button !== 0) return;
+    pointerStartX.current = event.clientX;
   };
 
-  const onNext = () => {
-    setMotionDir("next");
-    if (tab === "quote") quotePager.next();
-    else journalPager.next();
+  const onPointerUp = (event: PointerEvent<HTMLElement>) => {
+    if (pointerStartX.current === null) return;
+
+    const deltaX = event.clientX - pointerStartX.current;
+    pointerStartX.current = null;
+
+    if (Math.abs(deltaX) < SWIPE_THRESHOLD) return;
+    if (deltaX < 0) onNext();
+    else onPrev();
   };
 
   return (
     <div className="container pageStack homePage">
-      <section className="toolbarRow homeToolbar">
-        <Tabs tab={tab} onChange={setTab} />
-        <div className="toolbarMeta">
-          {headerRight ? `${headerRight} 읽는 중` : "아직 불러온 페이지가 없습니다."}
-        </div>
-      </section>
-
-      {loading && quotesMeta.length === 0 && journalsMeta.length === 0 ? (
-        <section className="card noticeCard">
-          <div className="small">문장과 기록을 불러오는 중입니다.</div>
-        </section>
-      ) : null}
-
-      {error && quotesMeta.length === 0 && journalsMeta.length === 0 ? (
-        <section className="card noticeCard">
-          <div className="small">불러오기에 실패했습니다: {error}</div>
-        </section>
-      ) : null}
-
-      <section className="card readerCard">
-        {!currentMeta ? (
-          <div className="emptyState">
-            <span className="eyebrow">아직 비어 있습니다</span>
-            <h3 className="emptyTitle">불러온 글이 아직 없습니다.</h3>
-            <p className="sectionLead">
-              Notion 데이터 구성을 확인한 뒤 다시 시도해보세요.
-            </p>
-          </div>
-        ) : currentText === undefined ? (
-          <div className="emptyState">
-            <span className="eyebrow">불러오는 중</span>
-            <h3 className="emptyTitle">본문을 천천히 준비하고 있습니다.</h3>
-            <p className="sectionLead">
-              현재 페이지와 인접한 글을 먼저 가져와 자연스럽게 이어 읽을 수 있게
-              준비합니다.
-            </p>
-          </div>
-        ) : (
-          <article
-            key={currentMeta.id}
-            className={`contentMotion ${
-              motionDir === "next" ? "toNext" : "toPrev"
-            } readerContent`}
-          >
-            <div className="entryMetaRow">
-              <div className="entryTagGroup">
-                <span className="eyebrow subtle">
-                  {tab === "quote" ? "문장" : "기록"}
-                </span>
-                <div className="entrySource">
-                  {currentMeta.pageTitle ||
-                    (tab === "quote" ? "문장 아카이브" : "기록 아카이브")}
-                </div>
-              </div>
-
-              <div className="entryCounter">{headerRight}</div>
+      <section
+        className="bookStage"
+        onPointerDown={onPointerDown}
+        onPointerUp={onPointerUp}
+        onPointerCancel={() => {
+          pointerStartX.current = null;
+        }}
+      >
+        <div className="bookFrame" aria-live="polite">
+          {!currentMeta && loading ? (
+            <div className="bookState">
+              <span className="eyebrow subtle">로딩</span>
+              <h2>불러오는 중</h2>
             </div>
+          ) : null}
 
-            {tab === "journal" && currentMeta.date ? (
-              <div className="entryDate">{currentMeta.date}</div>
-            ) : null}
+          {!currentMeta && error ? (
+            <div className="bookState">
+              <span className="eyebrow subtle">연결 오류</span>
+              <h2>불러오기 실패</h2>
+              <p>{error}</p>
+            </div>
+          ) : null}
 
-            <div
-              className={`quoteText ${tab === "journal" ? "journalText" : ""}`}
+          {!currentMeta && !loading && !error ? (
+            <div className="bookState">
+              <span className="eyebrow subtle">비어 있음</span>
+              <h2>문장 없음</h2>
+            </div>
+          ) : null}
+
+          {currentMeta && currentText === undefined ? (
+            <div className="bookState">
+              <span className="eyebrow subtle">로딩</span>
+              <h2>본문 로딩 중</h2>
+            </div>
+          ) : null}
+
+          {currentMeta && currentText !== undefined ? (
+            <article
+              key={currentMeta.id}
+              className={`bookSpread contentMotion ${
+                motionDir === "next" ? "toNext" : "toPrev"
+              }`}
             >
-              {currentText}
-            </div>
+              <div className="bookPage bookPageText" ref={quoteBoxRef}>
+                <button
+                  type="button"
+                  className="quoteNavButton quoteNavPrev"
+                  onClick={onPrev}
+                  aria-label="이전 문장"
+                  title="이전 문장"
+                >
+                  ‹
+                </button>
 
-            <div className="entryFooter">
-              {currentMeta.author ? (
-                <div className="entryAuthor">— {currentMeta.author}</div>
-              ) : null}
-            </div>
-          </article>
-        )}
+                <button
+                  type="button"
+                  className="quoteNavButton quoteNavNext"
+                  onClick={onNext}
+                  aria-label="다음 문장"
+                  title="다음 문장"
+                >
+                  ›
+                </button>
+
+                <header className="quoteHeader">
+                  <div className="quoteHeaderText">
+                    <h2>{currentMeta.pageTitle || "문장 보관함"}</h2>
+                    <div className="quoteMeta">
+                      {pageMeta ? <span>{pageMeta}</span> : null}
+                      {authorLabel ? <span>{authorLabel}</span> : null}
+                      {currentMeta.date ? <span>{currentMeta.date}</span> : null}
+                    </div>
+                  </div>
+
+                  <button
+                    type="button"
+                    className={`btn iconButton quoteSaveButton ${
+                      isCurrentLiked ? "saved" : ""
+                    }`}
+                    onClick={() => toggleLike(currentMeta.id)}
+                    aria-pressed={isCurrentLiked}
+                    aria-label={isCurrentLiked ? "저장 취소" : "저장"}
+                    title={isCurrentLiked ? "저장 취소" : "저장"}
+                  >
+                    {isCurrentLiked ? "♥" : "♡"}
+                  </button>
+                </header>
+
+                <blockquote className="quoteText" ref={quoteTextRef}>
+                  {currentText}
+                </blockquote>
+              </div>
+            </article>
+          ) : null}
+        </div>
       </section>
 
       {currentMeta ? (
         <section className="readerQuickBar">
-          <div className="readerQuickInfo">
-            <span className="readerQuickLabel">
-              {currentMeta.pageTitle ||
-                (tab === "quote" ? "문장 아카이브" : "기록 아카이브")}
-            </span>
-            <strong className="readerQuickValue">
-              {headerRight || "0/0"} · {modeLabel}
-            </strong>
-          </div>
-
           <div className="readerQuickActions">
-            <button type="button" className="btn" onClick={onPrev}>
-              이전
-            </button>
-            <button type="button" className="btn primary" onClick={onNext}>
-              다음
+            <button
+              type="button"
+              className="btn iconButton readerActionPrev"
+              onClick={onPrev}
+              aria-label="이전 문장"
+              title="이전 문장"
+            >
+              ‹
             </button>
             <button
               type="button"
-              className={`btn ${isCurrentLiked ? "saved" : ""}`}
+              className="btn primary iconButton readerActionNext"
+              onClick={onNext}
+              aria-label="다음 문장"
+              title="다음 문장"
+            >
+              ›
+            </button>
+            <button
+              type="button"
+              className={`btn iconButton readerActionSave ${
+                isCurrentLiked ? "saved" : ""
+              }`}
               onClick={() => toggleLike(currentMeta.id)}
               aria-pressed={isCurrentLiked}
+              aria-label={isCurrentLiked ? "저장 취소" : "저장"}
+              title={isCurrentLiked ? "저장 취소" : "저장"}
             >
-              {isCurrentLiked ? "저장됨" : "저장"}
+              {isCurrentLiked ? "♥" : "♡"}
             </button>
           </div>
         </section>

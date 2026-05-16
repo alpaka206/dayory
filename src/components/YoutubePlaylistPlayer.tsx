@@ -43,6 +43,8 @@ export default function YouTubePlaylistPlayer({ tracks }: Props) {
 
   const total = list.length;
   const [idx, setIdx] = useState(() => loadTrackIndex());
+  const [playerEnabled, setPlayerEnabled] = useState(false);
+  const [wantsPlay, setWantsPlay] = useState(false);
   const safeIdx = useMemo(() => {
     if (total <= 0) return 0;
     return ((idx % total) + total) % total;
@@ -65,16 +67,19 @@ export default function YouTubePlaylistPlayer({ tracks }: Props) {
 
   const { containerRef, ready, state, error, play, pause } = useYouTubePlayer({
     videoId: current?.id ?? "",
+    enabled: playerEnabled,
+    autoplay: wantsPlay,
     onEnded: next,
     onError: total > 1 ? next : undefined,
   });
 
   const playing = state === 1;
-  const helperText = error
-    ? "재생 오류가 있어 다음 곡으로 넘어갑니다."
-    : ready
-      ? `${safeIdx + 1} / ${total}`
-      : "플레이어를 준비하고 있습니다.";
+  const trackLabel = error ? "재생 오류" : current.title;
+
+  useEffect(() => {
+    if (!ready || !wantsPlay) return;
+    play();
+  }, [play, ready, wantsPlay]);
 
   if (total === 0) return null;
 
@@ -82,16 +87,18 @@ export default function YouTubePlaylistPlayer({ tracks }: Props) {
     <section className="playerMini">
       <div
         ref={containerRef}
-        style={{ width: 0, height: 0, overflow: "hidden" }}
+        style={{
+          position: "absolute",
+          width: 1,
+          height: 1,
+          overflow: "hidden",
+          opacity: 0,
+          pointerEvents: "none",
+        }}
       />
 
       <div className="playerMiniInfo">
-        <div className="playerMiniTop">
-          <span className="eyebrow subtle">함께 듣는 음악</span>
-          <div className="playerMiniMeta">{helperText}</div>
-        </div>
-
-        <div className="playerMiniTitle">{current.title}</div>
+        <div className="playerMiniTitle">{trackLabel}</div>
         <div className="playerMiniArtist">{current.artist ?? " "}</div>
       </div>
 
@@ -109,7 +116,10 @@ export default function YouTubePlaylistPlayer({ tracks }: Props) {
           <button
             type="button"
             className="chip on icon play"
-            onClick={pause}
+            onClick={() => {
+              setWantsPlay(false);
+              pause();
+            }}
             aria-label="일시정지"
           >
             Ⅱ
@@ -118,7 +128,11 @@ export default function YouTubePlaylistPlayer({ tracks }: Props) {
           <button
             type="button"
             className="chip on icon play"
-            onClick={play}
+            onClick={() => {
+              setPlayerEnabled(true);
+              setWantsPlay(true);
+              if (ready) play();
+            }}
             aria-label="재생"
           >
             ►

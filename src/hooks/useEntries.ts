@@ -12,7 +12,7 @@ import {
 import type { EntryMeta } from "../lib/types";
 import { fetchEntryMetaList, fetchPageContent } from "../lib/notion";
 
-const CACHE_KEY = "teum_meta_cache_v2";
+const CACHE_KEY = "teum_meta_cache_v3";
 const CACHE_TTL_MS = 30 * 60 * 1000;
 const PAGE_FETCH_CONCURRENCY = 4;
 
@@ -21,8 +21,7 @@ type ContentMap = Record<string, string>;
 type EntriesContextValue = {
   loading: boolean;
   error: string | null;
-  quotesMeta: EntryMeta[];
-  journalsMeta: EntryMeta[];
+  entriesMeta: EntryMeta[];
   getText: (id: string) => string | undefined;
   ensureContentByIds: (ids: string[]) => Promise<void>;
 };
@@ -63,17 +62,7 @@ function useEntriesState(): EntriesContextValue {
   const contentRef = useRef<ContentMap>({});
   const inflight = useRef<Map<string, Promise<string | null>>>(new Map());
 
-  const quotesMeta = useMemo(
-    () => meta.filter((m) => m.type === "quote"),
-    [meta]
-  );
-
-  const journalsMeta = useMemo(() => {
-    return meta
-      .filter((m) => m.type === "journal")
-      .slice()
-      .sort((a, b) => (b.date ?? "").localeCompare(a.date ?? ""));
-  }, [meta]);
+  const entriesMeta = useMemo(() => meta, [meta]);
 
   useEffect(() => {
     contentRef.current = content;
@@ -178,16 +167,14 @@ function useEntriesState(): EntriesContextValue {
     () => ({
       loading: loadingMeta,
       error,
-      quotesMeta,
-      journalsMeta,
+      entriesMeta,
       getText,
       ensureContentByIds,
     }),
     [
       loadingMeta,
       error,
-      quotesMeta,
-      journalsMeta,
+      entriesMeta,
       getText,
       ensureContentByIds,
     ]

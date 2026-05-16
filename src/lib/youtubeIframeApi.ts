@@ -31,6 +31,7 @@ export type YTPlayer = {
   pauseVideo: () => void;
   stopVideo: () => void;
   loadVideoById: (videoId: string) => void;
+  cueVideoById?: (videoId: string) => void;
 };
 
 declare global {

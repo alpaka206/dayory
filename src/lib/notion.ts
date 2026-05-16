@@ -1,10 +1,10 @@
-import type { EntryMeta, EntryType } from "./types";
+import type { EntryMeta } from "./types";
 
 const DB_PAGE_ID = import.meta.env.VITE_NOTION_PAGE_ID as string | undefined;
 
-function normType(v: unknown): EntryType {
-  const t = typeof v === "string" ? v.trim() : "";
-  return t === "journal" ? "journal" : "quote";
+function shouldHideRow(type: unknown): boolean {
+  const normalized = typeof type === "string" ? type.trim().toLowerCase() : "";
+  return normalized === "journal" || normalized === "journals" || normalized === "기록";
 }
 
 type RawRow = {
@@ -27,9 +27,9 @@ export async function fetchEntryMetaList(): Promise<EntryMeta[]> {
   }
 
   return (json as RawRow[])
+    .filter((r) => !shouldHideRow(r.type))
     .map((r) => ({
       id: r.id ?? "",
-      type: normType(r.type),
       author: r.author ?? "",
       date: r.date ?? "",
       pageTitle: r.pageTitle ?? "",

@@ -7,12 +7,16 @@ import {
 
 type UseYouTubePlayerArgs = {
   videoId: string;
+  enabled: boolean;
+  autoplay?: boolean;
   onEnded?: () => void;
   onError?: () => void;
 };
 
 export function useYouTubePlayer({
   videoId,
+  enabled,
+  autoplay = false,
   onEnded,
   onError,
 }: UseYouTubePlayerArgs) {
@@ -25,6 +29,8 @@ export function useYouTubePlayer({
 
   // 1) 최초 생성
   useEffect(() => {
+    if (!enabled) return;
+
     let alive = true;
 
     void (async () => {
@@ -91,7 +97,7 @@ export function useYouTubePlayer({
       setState(-1);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [enabled]);
 
   // 2) videoId 변경 시 교체(기본은 cue)
   useEffect(() => {
@@ -103,8 +109,19 @@ export function useYouTubePlayer({
 
     setError(null);
     setState(-1);
-    p.loadVideoById(videoId);
-  }, [videoId, ready]);
+    if (autoplay) {
+      p.loadVideoById(videoId);
+      return;
+    }
+
+    if (p.cueVideoById) {
+      p.cueVideoById(videoId);
+      setState(5);
+    } else {
+      p.loadVideoById(videoId);
+      p.pauseVideo();
+    }
+  }, [autoplay, videoId, ready]);
 
   const play = useCallback(() => {
     playerRef.current?.playVideo();

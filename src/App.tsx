@@ -4,7 +4,6 @@ import {
   Navigate,
   Route,
   Routes,
-  useLocation,
 } from "react-router-dom";
 import YouTubePlaylistPlayer from "./components/YoutubePlaylistPlayer";
 import { TRACKS } from "./constants/TRACKS";
@@ -14,30 +13,12 @@ import Home from "./pages/Home";
 import "./styles/global.css";
 
 function AppHeader() {
-  const { pathname } = useLocation();
-  const isFav = pathname.startsWith("/favorite");
-
   return (
     <header className="container masthead">
       <div className="appHeader">
         <div className="brandIntro reveal">
-          <span className="eyebrow">문장 보관소</span>
-
           <div className="brandFrame">
-            <div className="brandTitle">틈</div>
-
-            <div className="brandCopy">
-              <h1 className="pageTitle">
-                {isFav
-                  ? "저장한 문장과 기록을 다시 펼쳐보는 서가"
-                  : "문장과 기록을 천천히 펼쳐보는 시간"}
-              </h1>
-              <p className="pageLead">
-                {isFav
-                  ? "좋아한 글만 차분하게 모아두고, 필요할 때 바로 다시 읽을 수 있습니다."
-                  : "짧은 문장부터 긴 기록까지, 음악과 함께 한 장씩 넘겨보세요."}
-              </p>
-            </div>
+            <div className="brandTitle">버팀목</div>
           </div>
         </div>
 
@@ -46,13 +27,13 @@ function AppHeader() {
             <NavLink
               to="/"
               end
-              className={({ isActive }) => `chip ${isActive ? "on" : ""}`}
+              className={({ isActive }) => `navItem ${isActive ? "on" : ""}`}
             >
               둘러보기
             </NavLink>
             <NavLink
               to="/favorite"
-              className={({ isActive }) => `chip ${isActive ? "on" : ""}`}
+              className={({ isActive }) => `navItem ${isActive ? "on" : ""}`}
             >
               저장함
             </NavLink>
