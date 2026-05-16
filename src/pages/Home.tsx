@@ -92,32 +92,54 @@ export default function Home() {
 
     const header = box.querySelector<HTMLElement>(".quoteHeader");
     const width = box.clientWidth;
-    const availableHeight =
-      box.clientHeight - (header?.offsetHeight ?? 0) - 28;
+    const availableHeight = Math.max(
+      0,
+      box.clientHeight - (header?.offsetHeight ?? 0) - 28
+    );
 
     const baseSize = width < 520 ? 19 : width < 820 ? 23 : 28;
     const minSize = width < 520 ? 12 : width < 820 ? 15 : 17;
     const lineHeight = width < 520 ? 1.62 : 1.72;
 
-    let size = baseSize;
-    quote.style.setProperty("--quote-font-size", `${size}px`);
+    quote.style.setProperty("--quote-font-size", `${baseSize}px`);
     quote.style.setProperty("--quote-line-height", String(lineHeight));
+    if (availableHeight === 0) return;
 
-    while (size > minSize && quote.scrollHeight > availableHeight) {
-      size -= 1;
-      quote.style.setProperty("--quote-font-size", `${size}px`);
+    const overflowHeight = quote.scrollHeight;
+    if (overflowHeight <= availableHeight) return;
+
+    const fitRatio = Math.max(0.1, availableHeight / overflowHeight);
+    const fittedSize = Math.max(
+      minSize,
+      Math.floor(baseSize * fitRatio * 0.98)
+    );
+
+    quote.style.setProperty("--quote-font-size", `${fittedSize}px`);
+
+    if (fittedSize > minSize && quote.scrollHeight > availableHeight) {
+      quote.style.setProperty("--quote-font-size", `${minSize}px`);
     }
   }, []);
 
   useLayoutEffect(() => {
     fitQuoteText();
-
-    const onResize = () => fitQuoteText();
-    window.addEventListener("resize", onResize);
-    void document.fonts?.ready?.then(fitQuoteText);
-
-    return () => window.removeEventListener("resize", onResize);
   }, [currentText, fitQuoteText]);
+
+  useEffect(() => {
+    let frameId = 0;
+    const onResize = () => {
+      cancelAnimationFrame(frameId);
+      frameId = requestAnimationFrame(fitQuoteText);
+    };
+
+    window.addEventListener("resize", onResize);
+    void document.fonts?.ready?.then(onResize);
+
+    return () => {
+      cancelAnimationFrame(frameId);
+      window.removeEventListener("resize", onResize);
+    };
+  }, [fitQuoteText]);
 
   const onPointerDown = (event: PointerEvent<HTMLElement>) => {
     if (event.pointerType === "mouse" && event.button !== 0) return;
