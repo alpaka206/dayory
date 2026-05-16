@@ -12,18 +12,62 @@ import { usePager } from "../hooks/usePager";
 import type { EntryMeta } from "../lib/types";
 
 const SWIPE_THRESHOLD = 42;
+const PREFETCH_AHEAD_THRESHOLD = 3;
+const PREFETCH_AHEAD_COUNT = 10;
 
-function getWarmupIds(list: EntryMeta[], idx: number): string[] {
+function getEntryAtOffset(
+  list: EntryMeta[],
+  idx: number,
+  offset: number
+): EntryMeta | undefined {
+  if (list.length === 0) return undefined;
+  return list[(idx + offset + list.length) % list.length];
+}
+
+function getImmediateIds(list: EntryMeta[], idx: number): string[] {
   if (list.length === 0) return [];
 
-  const targetIndexes = [idx];
-  if (list.length > 1) targetIndexes.push((idx + 1) % list.length);
-  if (list.length > 2) {
-    targetIndexes.push((idx - 1 + list.length) % list.length);
+  const current = getEntryAtOffset(list, idx, 0);
+  const nextEntry = getEntryAtOffset(list, idx, 1);
+  const prevEntry = getEntryAtOffset(list, idx, -1);
+
+  return [current?.id, nextEntry?.id, prevEntry?.id].filter(
+    (id): id is string => Boolean(id)
+  );
+}
+
+function getAheadIds(list: EntryMeta[], idx: number, count: number): string[] {
+  if (list.length === 0) return [];
+
+  const ids: string[] = [];
+  const cappedCount = Math.min(count, Math.max(0, list.length - 1));
+
+  for (let offset = 1; offset <= cappedCount; offset += 1) {
+    const entry = getEntryAtOffset(list, idx, offset);
+    if (entry?.id) ids.push(entry.id);
   }
 
-  return [...new Set(targetIndexes.map((targetIdx) => list[targetIdx]?.id))]
-    .filter((id): id is string => Boolean(id));
+  return [...new Set(ids)];
+}
+
+function countPreparedAhead(
+  list: EntryMeta[],
+  idx: number,
+  getText: (id: string) => string | undefined
+): number {
+  let preparedCount = 0;
+  const cappedCount = Math.min(
+    PREFETCH_AHEAD_COUNT,
+    Math.max(0, list.length - 1)
+  );
+
+  for (let offset = 1; offset <= cappedCount; offset += 1) {
+    const entry = getEntryAtOffset(list, idx, offset);
+    if (!entry?.id || getText(entry.id) === undefined) break;
+    preparedCount += 1;
+  }
+
+  return preparedCount;
 }
 
 function getAuthorLabel(author: string, title: string): string {
@@ -70,10 +114,21 @@ export default function Home() {
   }, [next]);
 
   useEffect(() => {
-    const ids = getWarmupIds(entriesMeta, idx);
+    const ids = getImmediateIds(entriesMeta, idx);
     if (ids.length === 0) return;
     void ensureContentByIds(ids);
   }, [entriesMeta, ensureContentByIds, idx]);
+
+  useEffect(() => {
+    if (entriesMeta.length === 0) return;
+
+    const preparedAhead = countPreparedAhead(entriesMeta, idx, getText);
+    if (preparedAhead > PREFETCH_AHEAD_THRESHOLD) return;
+
+    const ids = getAheadIds(entriesMeta, idx, PREFETCH_AHEAD_COUNT);
+    if (ids.length === 0) return;
+    void ensureContentByIds(ids);
+  }, [entriesMeta, ensureContentByIds, getText, idx]);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {

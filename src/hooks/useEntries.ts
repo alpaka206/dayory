@@ -7,7 +7,10 @@ import {
   useMemo,
   useRef,
   useState,
+  type Dispatch,
+  type MutableRefObject,
   type PropsWithChildren,
+  type SetStateAction,
 } from "react";
 import type { EntryMeta } from "../lib/types";
 import { fetchEntryMetaList, fetchPageContent } from "../lib/notion";
@@ -52,6 +55,24 @@ function saveMetaCache(meta: EntryMeta[]) {
   }
 }
 
+function commitContentResult(
+  setContent: Dispatch<SetStateAction<ContentMap>>,
+  contentRef: MutableRefObject<ContentMap>,
+  id: string,
+  text: string
+) {
+  setContent((prev) => {
+    if (prev[id] === text) {
+      contentRef.current = prev;
+      return prev;
+    }
+
+    const next = { ...prev, [id]: text };
+    contentRef.current = next;
+    return next;
+  });
+}
+
 function useEntriesState(): EntriesContextValue {
   const cached = useMemo(() => loadMetaCache(), []);
   const [meta, setMeta] = useState<EntryMeta[]>(cached ?? []);
@@ -60,7 +81,8 @@ function useEntriesState(): EntriesContextValue {
   const [error, setError] = useState<string | null>(null);
 
   const contentRef = useRef<ContentMap>({});
-  const inflight = useRef<Map<string, Promise<string | null>>>(new Map());
+  const inflight = useRef<Map<string, Promise<void>>>(new Map());
+  const pendingIds = useRef<Set<string>>(new Set());
 
   const entriesMeta = useMemo(() => meta, [meta]);
 
@@ -98,10 +120,15 @@ function useEntriesState(): EntriesContextValue {
     const uniqueIds = [...new Set(ids)]
       .map((id) => id.trim())
       .filter(
-        (id) => id.length > 0 && contentRef.current[id] === undefined
+        (id) =>
+          id.length > 0 &&
+          contentRef.current[id] === undefined &&
+          !pendingIds.current.has(id) &&
+          !inflight.current.has(id)
       );
 
     if (uniqueIds.length === 0) return;
+    uniqueIds.forEach((id) => pendingIds.current.add(id));
 
     const chunks: string[][] = [];
     for (let i = 0; i < uniqueIds.length; i += PAGE_FETCH_CONCURRENCY) {
@@ -109,46 +136,30 @@ function useEntriesState(): EntriesContextValue {
     }
 
     for (const chunk of chunks) {
-      const results = await Promise.all(
+      await Promise.all(
         chunk.map(async (id) => {
           const existing = inflight.current.get(id);
           if (existing) {
-            const text = await existing;
-            return text === null ? null : { id, text };
+            await existing;
+            return;
           }
 
           const task = (async () => {
             try {
-              return await fetchPageContent(id);
+              const text = await fetchPageContent(id);
+              commitContentResult(setContent, contentRef, id, text);
             } catch {
-              return null;
+              // Keep this silent so one slow or failed page never blocks nearby prefetches.
             } finally {
               inflight.current.delete(id);
+              pendingIds.current.delete(id);
             }
           })();
 
           inflight.current.set(id, task);
-
-          const text = await task;
-          return text === null ? null : { id, text };
+          await task;
         })
       );
-
-      setContent((prev) => {
-        let changed = false;
-        const next = { ...prev };
-
-        for (const result of results) {
-          if (result && next[result.id] !== result.text) {
-            next[result.id] = result.text;
-            changed = true;
-          }
-        }
-
-        const resolved = changed ? next : prev;
-        contentRef.current = resolved;
-        return resolved;
-      });
     }
   }, []);
 
